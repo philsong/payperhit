@@ -3,8 +3,8 @@ var payperhit = require('./middleware');
 var payperhit_levelup = require('./backend');
 
 var pph = payperhit({
-  backend: payperhit_levelup('~/.payperhit'),
-  paymentAddress: '1DhueLdyeocpeDfUbX4EH1keCwMXYp5386'
+  backend: payperhit_levelup('./.payperhit'),
+  paymentAddress: 'mjs48NFDC9A7GLoboj9s6YsAm4mAumeuVd'
 });
 
 // Setup payment channel support
@@ -17,3 +17,6 @@ app.get('/value/<key>', pph.charge(1 * SATOSHIS), function(req, res) {
 app.put('/value/<key>', pph.charge(10 * SATOSHIS), function(req, res) {
     res.end('You just payed 10 satoshis to post here');
 });
+
+app.listen(5050);
+console.log('Express server started on port %s', 5050);

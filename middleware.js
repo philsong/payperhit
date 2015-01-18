@@ -1,4 +1,6 @@
 var bitcore = require('bitcore');
+var assert = require('assert');
+var channel = require('bitcore-channel');
 var bodyParser = require('body-parser');
 
 var $ = function(check, message) {
@@ -29,11 +31,11 @@ function payperhit(opts) {
    * Parses headers and retrieves information about any payment updates in the
    * headers of the request
    */
-  var PUBLIC_KEY_HEADER = 'X-PPH-PUBLIC-KEY';
-  var PAYMENT_UPDATE = 'X-PPH-PAYMENT';
+  var PUBLIC_KEY_HEADER = 'x-pph-public-key';
+  var PAYMENT_UPDATE = 'x-pph-payment';
   var middleware = function(req, res, next) {
     var setUsedBalance = function() {
-      backend.getUsedBalance(req.headers.get(PUBLIC_KEY_HEADER), function(err, balance) {
+      backend.getUsedBalance(req.headers[PUBLIC_KEY_HEADER], function(err, balance) {
         if (err) {
           return res.end('Internal error when retrieving payment channel status');
         }
@@ -42,15 +44,15 @@ function payperhit(opts) {
       });
     };
     req.pph = req.pph || {};
-    if (!req.headers.get(PUBLIC_KEY_HEADER)) {
+    if (!req.headers[PUBLIC_KEY_HEADER]) {
       return next();
     }
-    backend.getProvider(req.headers.get(PUBLIC_KEY_HEADER), function(err, provider) {
+    backend.getProvider(req.headers[PUBLIC_KEY_HEADER], function(err, provider) {
       req.pph.provider = provider;
       req.pph.currentAmount = provider.currentAmount;
-      if (req.headers.get(PAYMENT_UPDATE)) {
+      if (req.headers[PAYMENT_UPDATE]) {
         try {
-          provider.validatePayment(JSON.parse(req.headers.get(PAYMENT_UPDATE)));
+          provider.validatePayment(JSON.parse(req.headers[PAYMENT_UPDATE]));
           backend.updateLastPayment(publicKey, provider.currentAmount, function(err) {
             if (err) {
               console.log(err);
@@ -77,7 +79,7 @@ function payperhit(opts) {
    */
   middleware.requests.init = function(req, res) {
     self.backend.createPrivateKey(function(err, privateKey) {
-      response.end(privateKey.publicKey.toString());
+      res.end(privateKey.publicKey.toString());
     });
   };
 
@@ -106,21 +108,26 @@ function payperhit(opts) {
         return res.end('Unable to retrieve information about that public key');
       }
 
-      var provider = channel.Provider({
+      console.log('Private key is ', privateKey);
+      console.log('Public key is ', privateKey.publicKey.toString());
+
+      var provider = new channel.Provider({
         key: privateKey
       });
 
       var response = {};
       try {
-        response.refund = provider.signRefund(refund).toJSON();
+        refund = provider.signRefund(refund);
+        response.refund = refund.toObject();
       } catch (error) {
         console.log(error);
+        throw(error);
         return res.end('Internal error on refund signing');
       }
 
       if (self.paymentAddress) {
-        response.paymentAddress = self.paymentAddress;
-        return res.end(response);
+        response.paymentAddress = self.paymentAddress.toString();
+        return res.json(response).end();
       } else {
         backend.createPaymentAddressFor(publicKey, function(err, paymentAddress) {
           if (error) {
@@ -209,7 +216,7 @@ function payperhit(opts) {
    */
   middleware.charge = function(amount) {
     return function(req, res, next) {
-      if (!req.headers.get(PUBLIC_KEY_HEADER)) {
+      if (!req.headers[PUBLIC_KEY_HEADER]) {
         return res.end('Must specify the payment channel public key with ' + PUBLIC_KEY_HEADER);
       }
       middleware(req, res, function(req, res) {

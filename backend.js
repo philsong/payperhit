@@ -1,8 +1,12 @@
 var bitcore = require('bitcore');
+var channel = require('bitcore-channel');
 var async = require('async');
 var leveldb = require('level');
 
 function LevelUpBackend(opts) {
+  if (!(this instanceof LevelUpBackend)) {
+    return new LevelUpBackend(opts);
+  }
   this.db = leveldb(opts);
 }
 
@@ -134,3 +138,5 @@ LevelUpBackend.prototype.getProvider = function(publicKey, paymentAddress, callb
     return callback(null, provider);
   });
 };
+
+module.exports = LevelUpBackend;
