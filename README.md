@@ -34,7 +34,6 @@ app.put('/value/<key>', pph.charge(10 * SATOSHIS), function(req, res) {
 
 pph.setup(app) is shortcut for:
 ```javascript
-app.use(pph);
 app.post('/_pph/init',  pph.init);  // Setup the endpoint that returns a new public key ("session id?")
 app.post('/_pph/setup', pph.setup); // Sign the refund transaction
 app.post('/_pph/start', pph.start); // Takes the commitment transaction and first payment

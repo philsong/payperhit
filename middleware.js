@@ -43,7 +43,7 @@ function payperhit(opts) {
     };
     req.pph = req.pph || {};
     if (!req.headers.get(PUBLIC_KEY_HEADER)) {
-      return res.end('Must specify the payment channel public key with ' + PUBLIC_KEY_HEADER);
+      return next();
     }
     backend.getProvider(req.headers.get(PUBLIC_KEY_HEADER), function(err, provider) {
       req.pph.provider = provider;
@@ -209,6 +209,9 @@ function payperhit(opts) {
    */
   middleware.charge = function(amount) {
     return function(req, res, next) {
+      if (!req.headers.get(PUBLIC_KEY_HEADER)) {
+        return res.end('Must specify the payment channel public key with ' + PUBLIC_KEY_HEADER);
+      }
       middleware(req, res, function(req, res) {
         var available = req.pph.currentAmount - req.pph.usedBalance;
         if (available < amount) {
