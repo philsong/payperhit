@@ -1,0 +1,29 @@
+{
+  "name": "payperhit",
+  "version": "0.0.1",
+  "description": "Add micropayments to your web API",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eordano/payperhit"
+  },
+  "keywords": [
+    "bitcoin",
+    "payment",
+    "channel",
+    "hit",
+    "webapi"
+  ],
+  "author": "Esteban Ordano <eordano@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/eordano/payperhit/issues"
+  },
+  "homepage": "https://github.com/eordano/payperhit",
+  "dependencies": {
+    "level": "^0.18.0"
+  }
+}
