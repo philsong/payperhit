@@ -1,5 +1,6 @@
 var bitcore = require('bitcore');
 var assert = require('assert');
+var async = require('async');
 var channel = require('bitcore-channel');
 var bodyParser = require('body-parser');
 
@@ -144,13 +145,13 @@ function payperhit(opts) {
    * Default route: "/_pph/start"
    * Receives a first payment transaction
    */
-  middleware.requests.start = function(callback) {
+  middleware.requests.start = function(req, res) {
     if (!req.body) {
       return res.end('Must provide a json body for this request');
     }
 
     var publicKey = req.body.publicKey;
-    var commitmentTx = req.body.commitment;
+    var commitmentTx = new channel.Transactions.Commitment(req.body.commitment);
     var paymentTx = req.body.payment;
 
     if (!publicKey) {
@@ -162,7 +163,8 @@ function payperhit(opts) {
     if (!commitmentTx) {
       return res.end('Must provide a `commitment` param in the json body');
     }
-    var provider = channel.Provider({});
+    // TODO: Check that commitmentTx is confirmed or has high confidence
+    var provider = new channel.Provider({});
     async.waterfall([
       function(callback) {
         backend.getPrivateKey(publicKey, function(err, privateKey) {
@@ -192,7 +194,7 @@ function payperhit(opts) {
       function(callback) {
         try {
           provider.validPayment(paymentTx);
-          return backend.savePaymentTransaction(provider.paymentTx, callback);
+          return backend.savePaymentTransaction(publicKey, provider.paymentTx, callback);
         } catch (e) {
           console.log(e);
           return callback('Invalid payment');
