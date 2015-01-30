@@ -11,10 +11,10 @@ var pph = payperhit({
 pph.setup(app);
 
 var SATOSHIS = 1;
-app.get('/value/<key>', pph.charge(1 * SATOSHIS), function(req, res) {
+app.get('/read', pph.charge(1 * SATOSHIS), function(req, res) {
     res.end('Did I just pay 1 satoshi to read this?');
 });
-app.put('/value/<key>', pph.charge(10 * SATOSHIS), function(req, res) {
+app.put('/write', pph.charge(10 * SATOSHIS), function(req, res) {
     res.end('You just payed 10 satoshis to post here');
 });
 
