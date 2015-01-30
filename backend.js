@@ -124,6 +124,9 @@ LevelUpBackend.prototype.getProvider = function(publicKey, paymentAddress, callb
     },
     function(callback) {
       getLastPaymentTransaction(publicKey, callback);
+    },
+    function(callback) {
+      getUsedBalance(publicKey, callback);
     }
   ], function(err, results) {
     if (err) {
@@ -135,6 +138,7 @@ LevelUpBackend.prototype.getProvider = function(publicKey, paymentAddress, callb
       currentAmount: results[2].currentAmount
     });
     provider.paymentTx = results[2];
+    provider.usedBalance = results[3];
     return callback(null, provider);
   });
 };

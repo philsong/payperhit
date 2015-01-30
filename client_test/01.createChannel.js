@@ -15,6 +15,8 @@ var commitmentKey = new PrivateKey(fs.readFileSync('commitment.key').toString())
 
 var providerKey = new PublicKey(fs.readFileSync('server.public.key').toString());
 
+console.log(fundingKey, refundKey, commitmentKey, providerKey);
+
 var consumer = new Consumer({
   fundingKey: fundingKey,
   refundKey: refundKey,

@@ -27,29 +27,31 @@ function payperhit(opts) {
    */
   this.paymentAddress = new bitcore.Address(opts.paymentAddress);
 
+  var PUBLIC_KEY_HEADER = 'x-pph-public-key';
+  var PAYMENT_UPDATE = 'x-pph-payment';
+
   /**
    * Parses headers and retrieves information about any payment updates in the
    * headers of the request
    */
-  var PUBLIC_KEY_HEADER = 'x-pph-public-key';
-  var PAYMENT_UPDATE = 'x-pph-payment';
   var middleware = function(req, res, next) {
-    var setUsedBalance = function() {
-      backend.getUsedBalance(req.headers[PUBLIC_KEY_HEADER], function(err, balance) {
-        if (err) {
-          return res.end('Internal error when retrieving payment channel status');
-        }
-        req.pph.usedBalance = balance;
-        next();
-      });
-    };
-    req.pph = req.pph || {};
+
+    /**
+     * If no public key is provided, the request is ignored (considered not payperhit-aware)
+     */
     if (!req.headers[PUBLIC_KEY_HEADER]) {
       return next();
     }
+
+    /**
+     * req.pph stores the state of the payment channel for this request
+     */
+    req.pph = req.pph || {};
+
     backend.getProvider(req.headers[PUBLIC_KEY_HEADER], function(err, provider) {
       req.pph.provider = provider;
       req.pph.currentAmount = provider.currentAmount;
+      req.pph.usedBalance = provider.usedBalance;
       if (req.headers[PAYMENT_UPDATE]) {
         try {
           provider.validatePayment(JSON.parse(req.headers[PAYMENT_UPDATE]));
@@ -58,15 +60,13 @@ function payperhit(opts) {
               console.log(err);
               return res.end('Internal error');
             }
+            console.log('Updated balance for client with key ' + req.headers[PUBLIC_KEY_HEADER] + '. Client has used ' + req.pph.usedBalance + ' satoshis so far');
             req.pph.currentAmount = provider.currentAmount;
-            setUsedBalance();
           });
         } catch (error) {
           console.log(error);
           return res.end('Invalid payment received');
         }
-      } else {
-        setUsedBalance();
       }
     });
   };
@@ -121,7 +121,6 @@ function payperhit(opts) {
         response.refund = refund.toObject();
       } catch (error) {
         console.log(error);
-        throw(error);
         return res.end('Internal error on refund signing');
       }
 
@@ -151,6 +150,7 @@ function payperhit(opts) {
     }
 
     var publicKey = req.body.publicKey;
+    var commitmentTx = req.body.commitment;
     var paymentTx = req.body.payment;
 
     if (!publicKey) {
@@ -158,6 +158,9 @@ function payperhit(opts) {
     }
     if (!paymentTx) {
       return res.end('Must provide a `payment` param in the json body');
+    }
+    if (!commitmentTx) {
+      return res.end('Must provide a `commitment` param in the json body');
     }
     var provider = channel.Provider({});
     async.waterfall([
@@ -225,7 +228,13 @@ function payperhit(opts) {
           res.statusCode(402);
           return res.end('Insufficient funds: available ' + available + ', need ' + amount);
         }
-        next();
+
+        /**
+         * Update the used balance before serving
+         */
+        req.pph.usedBalance += available;
+        console.log('Client with key ' + req.headers[PUBLIC_KEY_HEADER] + ' has used ' + req.pph.usedBalance + ' satoshis out of ' + req.pph.currentAmount + ' available');
+        backend.saveUsedBalance(req.headers[PUBLIC_KEY_HEADER], req.pph.usedBalance, next);
       });
     };
   };

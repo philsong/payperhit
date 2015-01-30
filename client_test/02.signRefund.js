@@ -2,8 +2,13 @@ var bitcore = require('bitcore');
 var assert = require('assert');
 var fs = require('fs');
 var request = require('request');
+var channel = require('bitcore-channel');
 
 var providerKey = new bitcore.PublicKey(fs.readFileSync('server.public.key').toString());
+
+var fundingKey = new PrivateKey(fs.readFileSync('funding.key').toString());
+var refundKey = new PrivateKey(fs.readFileSync('refund.key').toString());
+var commitmentKey = new PrivateKey(fs.readFileSync('commitment.key').toString());
 
 var refund = JSON.parse(fs.readFileSync('unsigned.refund.transaction'));
 
@@ -18,12 +23,13 @@ request.post({
   if (err) {
     console.log('error: ', err);
   } else {
-    console.log('Transaction signed correctly');
-    var transaction = bitcore.Transaction(body.refund.transaction);
+    // TODO: Check that public key matches for signature
+    // TODO: Check that signature is correct
+    var transaction = new channel.Transactions.Refund(body.refund);
     console.log('Id: ', transaction.id);
     console.log('Raw: ', transaction.serialize());
-    console.log('Payment Address: ', body.paymentaddress);
-    fs.writeFileSync('signed.refund.transaction', JSON.stringify(body.refund));
+    console.log('Payment Address: ', body.paymentAddress);
+    fs.writeFileSync('signed.refund.transaction', transaction.toJSON());
     fs.writeFileSync('payment.address', body.paymentAddress);
   }
 });

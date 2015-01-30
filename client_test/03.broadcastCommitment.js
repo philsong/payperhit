@@ -22,21 +22,21 @@ var consumer = new Consumer({
   refundAddress: refundKey.toAddress(),
   commitmentKey: commitmentKey,
   providerPublicKey: providerKey,
-  providerAddress: providerKey.toAddress()
+  providerAddress: providerKey.toAddress(),
+  network: bitcore.Networks.testnet
 });
 
 var commitment = JSON.parse(fs.readFileSync('commitment.transaction').toString());
 consumer.commitmentTx = new Commitment(commitment);
-assert(consumer.commitmentTx.isFullySigned());
 
 var refund = JSON.parse(fs.readFileSync('signed.refund.transaction'));
 
 try {
   consumer.validateRefund(refund);
+
   console.log('Refund signature is valid. Broadcasting...');
   var insight = new explorers.Insight();
 
-  /*
   insight.broadcast(consumer.commitmentTx, function(err, txid) {
     if (err) {
       console.log('Error broadcasting');
@@ -44,7 +44,6 @@ try {
       console.log('Commitment transaction broadcasted as', txid);
     }
   });
-  */
 } catch (err) {
   console.log('Error, refund is not fully signed');
   throw err;
